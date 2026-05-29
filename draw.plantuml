@@ -1,0 +1,47 @@
+@startuml
+left to right direction
+skinparam packageStyle rectangle
+skinparam actorStyle awesome
+actor "Admin Clinique" as Admin
+actor "Super Admin" as SuperAdmin
+rectangle "Administration de la clinique" {
+  package "Gestion clinique" {
+    usecase "Créer une clinique"       as UC1
+    usecase "Modifier les infos"       as UC2
+    usecase "Supprimer la clinique"    as UC3
+    usecase "Gérer le QR code"         as UC4
+    usecase "Voir tableau de bord"     as UC5
+  }
+  package "Gestion des accès" {
+    usecase "Vérifier une clinique"    as UC6
+    usecase "Gérer les utilisateurs"   as UC7
+    usecase "Gérer les permissions"    as UC8
+    usecase "Créer un compte"          as UC9
+    usecase "Modifier un utilisateur"  as UC10
+  }
+  package "Commun" {
+    usecase "Se connecter"             as UC11
+    usecase "Se déconnecter"           as UC12
+    usecase "Vérifier le rôle"         as UC13
+    usecase "Réinitialiser le mot de passe" as UC14
+  }
+  UC5 ..> UC6 : <<include>>
+}
+Admin --> UC1
+Admin --> UC2
+Admin --> UC3
+Admin --> UC4
+Admin --> UC5
+Admin --> UC6
+Admin --> UC7
+Admin --> UC8
+Admin --> UC9
+Admin --> UC10
+Admin --> UC11
+Admin --> UC12
+Admin --> UC13
+SuperAdmin --> UC11
+SuperAdmin --> UC12
+SuperAdmin --> UC13
+SuperAdmin --> UC14
+@enduml 
