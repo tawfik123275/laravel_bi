@@ -9,6 +9,9 @@ use App\Http\Controllers\SettingController;
 use App\Http\Controllers\Doctor\DoctorController;
 
 // here we will define all the routes for our application for the user interface 
+Route::get('/', function () {
+    return view('auth.login');
+});
 Route::middleware('auth')->group(function () {
 
     Route::get('/doctor', [DoctorController::class, 'index'])
@@ -31,10 +34,9 @@ Route::middleware('auth')->group(function () {
 
 
 
-Route::get('/', [DashboardController::class, 'index']);
+// Route::get('/', [DashboardController::class, 'index']);
 // Route::get('/doctor', [DoctorController::class, 'index']);
 Route::get('/doctor/prescription', [DoctorController::class, 'prescription']);
-
 Route::get('/analysis', [AnalysisController::class, 'index']);
 Route::get('/analysis/create', [AnalysisController::class, 'create']);
 Route::get('/managerAnalysis/index',[ManagerAnalysisController::class, 'index']);
@@ -44,12 +46,7 @@ Route::get('/reports', [ReportController::class, 'index']);
 
 
 Route::get('/settings', [SettingController::class, 'index']);
-
-
-
-
 // side barre direction 
-
 Route::post('/analysis/store', function (Illuminate\Http\Request $request) {
     return response()->json([
         'success' => true,

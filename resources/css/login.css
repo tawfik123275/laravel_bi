@@ -1,0 +1,298 @@
+
+    :root {
+        --primary-color: #2c5aa0;
+        --secondary-color: #4a90e2;
+        --accent-color: #64b5f6;
+        --lab-color: #8e44ad;
+        --success-color: #28a745;
+        --danger-color: #dc3545;
+        --text-dark: #2c3e50;
+        --text-light: #7f8c8d;
+        --border-color: #e1e8ed;
+    }
+
+    body {
+        background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+        margin: 0;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-family: 'Segoe UI', Roboto, sans-serif;
+        padding: 1rem;
+    }
+
+    .insta-card {
+        background: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 16px;
+        max-width: 480px;
+        width: 100%;
+        padding: 2.5rem 2rem;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        position: relative;
+        box-sizing: border-box;
+        margin: 0 auto;
+    }
+
+    .lang-switch {
+        position: absolute;
+        top: 16px;
+      
+        font-size: 0.9rem;
+    }
+
+    .lang-switch a {
+        color: var(--text-dark);
+        text-decoration: none;
+        margin: 0 0.25rem;
+        font-weight: 500;
+        transition: color 0.3s ease;
+    }
+
+    .lang-switch a:hover {
+        color: var(--primary-color);
+    }
+
+    .insta-card h6 {
+        text-align: center;
+        font-weight: 700;
+        font-size: 1.5rem;
+        margin-bottom: 2rem;
+        color: var(--text-dark);
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+    }
+
+    .role-selections {
+        display: grid;
+        grid-template-columns: repeat(2, 1fr);
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .role-card {
+        background: #fff;
+        border: 2px solid var(--border-color);
+        border-radius: 12px;
+        padding: 1.5rem 0.5rem;
+        text-align: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-weight: 600;
+        color: var(--text-dark);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .role-card::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 3px;
+        background: var(--primary-color);
+        transform: scaleX(0);
+        transition: transform 0.3s ease;
+    }
+
+    .role-card.doctor::before { background: var(--primary-color); }
+    .role-card.patient::before { background: var(--success-color); }
+    .role-card.clinic::before { background: var(--secondary-color); }
+    .role-card.lab::before { background: var(--lab-color); }
+
+    .role-card:hover {
+        border-color: var(--primary-color);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(44, 90, 160, 0.1);
+    }
+
+    .role-card:hover::before {
+        transform: scaleX(1);
+    }
+
+    .role-card.selected {
+        border-color: var(--primary-color);
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 20px rgba(44, 90, 160, 0.2);
+    }
+
+    .role-card.lab.selected {
+        background: linear-gradient(135deg, var(--lab-color), #9b59b6);
+    }
+
+    .role-card i {
+        display: block;
+        font-size: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    .role-card.lab i {
+        color: var(--lab-color);
+    }
+
+    .role-card.selected i {
+        color: white !important;
+    }
+
+    .form-control {
+        border-radius: 10px;
+        border: 2px solid var(--border-color);
+        padding: 0.75rem 1rem;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+    }
+
+    .form-control:focus {
+        border-color: var(--primary-color);
+        box-shadow: 0 0 0 3px rgba(44, 90, 160, 0.1);
+    }
+
+    .btn-login {
+        background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+        color: white;
+        border: none;
+        border-radius: 10px;
+        font-weight: 600;
+        padding: 0.75rem;
+        font-size: 1rem;
+        transition: all 0.3s ease;
+        margin-top: 0.5rem;
+    }
+
+    .btn-login:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 15px rgba(44, 90, 160, 0.3);
+    }
+
+    .error-message {
+        color: var(--danger-color);
+        text-align: center;
+        margin-bottom: 1.5rem;
+        font-size: 0.9rem;
+        background: rgba(220, 53, 69, 0.05);
+        padding: 1rem;
+        border-radius: 8px;
+        border: 1px solid rgba(220, 53, 69, 0.2);
+    }
+
+    .register-footer {
+        margin-top: 2rem;
+        text-align: center;
+        font-size: 0.9rem;
+        color: var(--text-light);
+        line-height: 1.6;
+    }
+
+    .register-footer a {
+        color: var(--primary-color);
+        font-weight: 600;
+        text-decoration: none;
+        margin: 0 0.5rem;
+        transition: color 0.3s ease;
+    }
+
+    .register-footer a:hover {
+        color: var(--secondary-color);
+        text-decoration: underline;
+    }
+
+    .lab-link {
+        color: var(--lab-color) !important;
+        font-weight: 700 !important;
+    }
+
+    .lab-link:hover {
+        color: #9b59b6 !important;
+    }
+
+    .forgot-password {
+        text-align: center;
+        margin-top: 1rem;
+    }
+
+    .forgot-password a {
+        color: var(--text-light);
+        text-decoration: none;
+        font-size: 0.9rem;
+        transition: color 0.3s ease;
+    }
+
+    .forgot-password a:hover {
+        color: var(--primary-color);
+    }
+
+    /* RTL specific styles */
+   
+
+    /* Animations */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    #loginFields {
+        animation: fadeIn 0.5s ease;
+    }
+
+    .role-badge {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: var(--lab-color);
+        color: white;
+        font-size: 0.7rem;
+        padding: 2px 6px;
+        border-radius: 10px;
+        font-weight: 600;
+    }
+
+    @media (max-width: 480px) {
+        .insta-card {
+            padding: 2rem 1.5rem;
+            margin: 0.5rem;
+        }
+        
+        .role-selections {
+            grid-template-columns: 1fr;
+            gap: 0.75rem;
+        }
+        
+        .role-card {
+            padding: 1.25rem 0.5rem;
+        }
+        
+        .register-footer a {
+            display: block;
+            margin: 0.25rem 0;
+        }
+        
+        .lang-switch {
+            position: relative;
+            top: auto;
+            left: auto;
+            right: auto;
+            text-align: center;
+            margin-bottom: 1rem;
+        }
+    }
+
+    @media (max-width: 360px) {
+        .insta-card {
+            padding: 1.5rem 1rem;
+        }
+        
+        .insta-card h6 {
+            font-size: 1.25rem;
+        }
+        
+        .form-control {
+            padding: 0.65rem 0.75rem;
+        }
+    }
+    
