@@ -7,10 +7,11 @@ use App\Http\Controllers\PatientController;
 use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\Doctor\DoctorController;
+use App\Http\Controllers\LoginController;
 
 // here we will define all the routes for our application for the user interface 
 Route::get('/', function () {
-    return view('auth.login');
+    return redirect('/login');
 });
 Route::middleware('auth')->group(function () {
 
@@ -21,6 +22,13 @@ Route::middleware('auth')->group(function () {
     //     ->middleware('role:lab');
 
 });
+// login router 
+Route::get('/login', [LoginController::class, 'index'])
+    ->name('login');
+
+Route::post('/login', [LoginController::class, 'store']);
+// end of login router
+
 
 
 
