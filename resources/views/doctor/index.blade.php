@@ -1,4 +1,4 @@
-@extends('layouts.doctor')
+@extends('layouts/doctor.doctor')
 @section('content')
  
             <!-- Header -->

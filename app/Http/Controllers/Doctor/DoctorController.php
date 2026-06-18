@@ -24,4 +24,30 @@ class DoctorController extends Controller
          $doctorId = 12;
         return view('doctor.prescription', compact('doctorId'));
     }
+     public function patients()
+    {
+        // $doctorId = Auth::id(); // ✅ real logged-in doctor
+         $doctorId = 12;
+        return view('doctor.patients', compact('doctorId'));
+    }
+     public function analysisManager()
+    {
+        // $doctorId = Auth::id(); // ✅ real logged-in doctor
+         $doctorId = 12;
+        return view('doctor.analysisManager', compact('doctorId'));
+    }
+     public function newPatient()
+    {
+        // $doctorId = Auth::id(); // ✅ real logged-in doctor
+         $doctorId = 12;
+        return view('doctor.newPatient', compact('doctorId'));
+    }
+     public function newAnalysisTest()
+    {
+        // $doctorId = Auth::id(); // ✅ real logged-in doctor
+         $doctorId = 12;
+        return view('doctor.newAnalysisTest', compact('doctorId'));
+    }
+    
+    
 }

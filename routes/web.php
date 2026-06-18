@@ -42,9 +42,21 @@ Route::post('/login', [LoginController::class, 'store']);
 
 
 
-// Route::get('/', [DashboardController::class, 'index']);
-// Route::get('/doctor', [DoctorController::class, 'index']);
+
+ // doctor routes 
+Route::get('/doctor/analysisManager',[DoctorController::class,'analysisManager']);
+Route::get('/doctor/newAnalysisTest',[DoctorController::class,'newAnalysisTest']);
+
+Route::get('/doctor/newPatients', [DoctorController::class, 'newPatient']);
+Route::get('/doctor/patients', [DoctorController::class, 'patients']);
 Route::get('/doctor/prescription', [DoctorController::class, 'prescription']);
+ 
+
+
+
+//  end of doctor routes 
+
+
 Route::get('/analysis', [AnalysisController::class, 'index']);
 Route::get('/analysis/create', [AnalysisController::class, 'create']);
 Route::get('/managerAnalysis/index',[ManagerAnalysisController::class, 'index']);

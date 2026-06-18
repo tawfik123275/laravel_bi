@@ -12,6 +12,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     @vite(['resources/css/doctor.css','resources/js/DoctorPrescription.js'])
+     @vite(['resources/css/app.css','resources/js/clean.js',  'resources/js/analysisRequestManager.js' ,'resources/js/NewRequestManager.js'])
     <!-- 'resources/js/ap.js' , -->
 </head>
 
@@ -19,7 +20,7 @@
 
 <div class="app-container">
 
-    @include('partials.doctor-navbar')
+    @include('partials.doctor/sidebar')
 
     <main class="main-content">
         @yield('content')
