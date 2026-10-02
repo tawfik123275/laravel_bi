@@ -17,34 +17,43 @@ class LoginController extends Controller
         $credentials = $request->validate([
             'email' => ['required', 'email'],
             'password' => ['required'],
-            'role' => ['required'],
+            'role' => ['required', 'in:doctor,patient,clinic,lab,lab_staff,admin'],
         ]);
 
-        if (Auth::attempt($credentials)) {
+        $selectedRole = $credentials['role'] === 'lab_staff' ? 'lab' : $credentials['role'];
+        $authenticated = Auth::attempt([
+            'email' => $credentials['email'],
+            'password' => $credentials['password'],
+        ]);
 
+        if ($authenticated && (Auth::user()->role === 'lab_staff' ? 'lab' : Auth::user()->role) === $selectedRole) {
             $request->session()->regenerate();
 
             $role = Auth::user()->role;
 
-            if ($role == 'doctor') {
-                return redirect('/doctor');
-            }
+            return redirect(match ($role) {
+                'doctor' => '/doctor',
+                'patient' => '/patient',
+                'lab', 'lab_staff' => '/analysis',
+                default => '/analysis',
+            });
+        }
 
-            if ($role == 'patient') {
-                return redirect('/patient');
-            }
-
-            if ($role == 'clinic') {
-                return redirect('/clinic');
-            }
-
-            if ($role == 'lab') {
-                return redirect('/lab');
-            }
+        if ($authenticated) {
+            Auth::logout();
         }
 
         return back()->withErrors([
             'email' => 'Email ou mot de passe incorrect.'
         ]);
+    }
+
+    public function destroy(Request $request)
+    {
+        Auth::logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
+
+        return redirect('/login');
     }
 }

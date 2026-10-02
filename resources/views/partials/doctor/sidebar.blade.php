@@ -48,10 +48,13 @@
 
         <hr>
 
-        <a href="/logout" class="nav-link text-danger">
-            <i class="fas fa-sign-out-alt"></i>
-            <span class="sidebar-text">Logout</span>
-        </a>
+        <form action="{{ route('logout') }}" method="POST">
+            @csrf
+            <button type="submit" class="nav-link text-danger border-0 bg-transparent w-100 text-start">
+                <i class="fas fa-sign-out-alt"></i>
+                <span class="sidebar-text">Logout</span>
+            </button>
+        </form>
 
     </nav>
 
