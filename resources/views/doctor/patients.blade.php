@@ -64,7 +64,7 @@
                         <div class="card-icon bg-gradient-info"><i class="fas fa-money-bill-wave"></i></div>
                         <div>
                             <div class="stat-number" id="statRevenue">0</div>
-                            <div class="stat-label">Revenue (DA)</div>
+                            <div class="stat-label">Request value (DA)</div>
                         </div>
                     </div>
                 </div>

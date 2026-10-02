@@ -13,8 +13,19 @@ class RoleMiddleware
      *
      * @param  Closure(Request): (Response)  $next
      */
-    public function handle(Request $request, Closure $next): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
+        $user = $request->user();
+        abort_unless($user, 403);
+
+        $allowedRoles = array_map(
+            fn (string $role) => $role === 'lab_staff' ? 'lab' : $role,
+            $roles
+        );
+        $userRole = $user->role === 'lab_staff' ? 'lab' : $user->role;
+
+        abort_unless(in_array($userRole, $allowedRoles, true), 403);
+
         return $next($request);
     }
 }
