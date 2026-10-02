@@ -167,9 +167,16 @@ class AnalysisController extends Controller
             }
 
             // 3️⃣ Create request
+            $doctorId = Auth::user()?->role === 'doctor'
+                ? Auth::id()
+                : ($validated['doctor_id'] ?? null);
+            $laboratoryId = Auth::user()?->role === 'lab'
+                ? Auth::id()
+                : ($validated['laboratory_id'] ?? null);
+
             $requestId = DB::table('laboratory_requests')->insertGetId([
-                'doctor_id' => $validated['doctor_id']?? null,
-                'laboratory_id' => $validated['laboratory_id']?? null,
+                'doctor_id' => $doctorId,
+                'laboratory_id' => $laboratoryId,
                 'patient_id' => $patientId,
                 'analysis_types' => json_encode($validated['analyses']),
                 'analysis_details' => json_encode($analysisDetails),
@@ -181,6 +188,18 @@ class AnalysisController extends Controller
                 'barcode' => 'BC-' . time(),
                 'status' => 'pending',
                 'created_at' => now(),
+            ]);
+
+            DB::table('billing_invoices')->insert([
+                'invoice_number' => 'INV-' . now()->format('Ymd') . '-' . str_pad((string) $requestId, 6, '0', STR_PAD_LEFT),
+                'request_id' => $requestId,
+                'doctor_id' => $doctorId,
+                'laboratory_id' => $laboratoryId,
+                'total_amount' => $totalAmount,
+                'amount_paid' => 0,
+                'status' => 'pending',
+                'created_at' => now(),
+                'updated_at' => now(),
             ]);
 
             // 4️⃣ Parameters insert

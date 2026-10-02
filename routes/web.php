@@ -8,6 +8,7 @@ use App\Http\Controllers\ReportController;
 use App\Http\Controllers\SettingController;
 use App\Http\Controllers\Doctor\DoctorController;
 use App\Http\Controllers\LoginController;
+use App\Http\Controllers\BillingController;
 
 // here we will define all the routes for our application for the user interface 
 Route::get('/', function () {
@@ -17,6 +18,11 @@ Route::middleware('auth')->group(function () {
 
     Route::get('/doctor', [DoctorController::class, 'index'])
         ->middleware('role:doctor');
+
+    Route::get('/billing', [BillingController::class, 'index']);
+    Route::get('/billing/invoices', [BillingController::class, 'invoices']);
+    Route::get('/billing/invoices/{invoiceId}/payments', [BillingController::class, 'payments']);
+    Route::post('/billing/invoices/{invoiceId}/payments', [BillingController::class, 'recordPayment']);
 
     // Route::get('/lab/dashboard', [LabController::class, 'index'])
     //     ->middleware('role:lab');
