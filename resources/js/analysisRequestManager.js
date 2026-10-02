@@ -1,3 +1,24 @@
+function parseJsonValue(value, fallback) {
+    if (!value) return fallback;
+
+    if (typeof value !== 'string') return value;
+
+    try {
+        return JSON.parse(value);
+    } catch (error) {
+        return fallback;
+    }
+}
+
+function escapeHtml(value) {
+    return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+}
+
 class AnalysisManager {
 
     constructor() {
@@ -587,6 +608,116 @@ this.tbodymanager.innerHTML = html;
             });
         });
 }
+
+    printTickets(id) {
+        this.printAnalysis(id, 'Analysis Request');
+    }
+
+    printReport(id) {
+        this.printAnalysis(id, 'Analysis Report');
+    }
+
+    printAnalysis(id, title) {
+        const printWindow = window.open('', '_blank', 'width=900,height=700');
+
+        if (!printWindow) {
+            Swal.fire('Print unavailable', 'Please allow popups to print this request.', 'warning');
+            return;
+        }
+
+        fetch(`/analysis-requests-details/${id}`, {
+            headers: { 'Accept': 'application/json' }
+        })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Unable to load the request');
+                }
+
+                return response.json();
+            })
+            .then(data => {
+                if (!data.success) {
+                    throw new Error(data.message || 'Unable to load the request');
+                }
+
+                const request = data.data.request;
+                const analysisTypes = parseJsonValue(request.analysis_types, []);
+                const analysisDetails = parseJsonValue(request.analysis_details, []);
+                const analyses = Array.isArray(analysisDetails) && analysisDetails.length
+                    ? analysisDetails
+                    : (Array.isArray(analysisTypes) ? analysisTypes : []);
+                const results = parseJsonValue(request.results, {});
+                const analysisRows = analyses.map((analysis, index) => {
+                    const name = typeof analysis === 'object'
+                        ? (analysis.real_name || analysis.name || '')
+                        : analysis;
+                    const price = typeof analysis === 'object' && analysis.price != null
+                        ? `${escapeHtml(analysis.price)} DA`
+                        : '';
+
+                    return `
+                        <tr>
+                            <td>${index + 1}</td>
+                            <td>${escapeHtml(name)}</td>
+                            <td>${price}</td>
+                        </tr>`;
+                }).join('');
+                const resultRows = results && typeof results === 'object'
+                    ? Object.entries(results).map(([key, value]) => `
+                        <tr>
+                            <td>${escapeHtml(key)}</td>
+                            <td>${escapeHtml(value)}</td>
+                        </tr>`).join('')
+                    : '';
+
+                printWindow.document.write(`
+                    <!doctype html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="utf-8">
+                        <title>${escapeHtml(title)} #${escapeHtml(request.id)}</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; color: #212529; margin: 32px; }
+                            h1 { margin-bottom: 4px; }
+                            .muted { color: #6c757d; }
+                            .summary { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 32px; margin: 20px 0; }
+                            table { border-collapse: collapse; width: 100%; margin: 12px 0 24px; }
+                            th, td { border: 1px solid #ced4da; padding: 8px; text-align: left; }
+                            th { background: #f1f3f5; }
+                            @media print { body { margin: 15mm; } }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>${escapeHtml(title)}</h1>
+                        <div class="muted">Request #${escapeHtml(request.id)}${request.barcode ? ` · ${escapeHtml(request.barcode)}` : ''}</div>
+                        <div class="summary">
+                            <div><strong>Patient:</strong> ${escapeHtml(request.patient_name || 'N/A')}</div>
+                            <div><strong>Phone:</strong> ${escapeHtml(request.patient_phone || 'N/A')}</div>
+                            <div><strong>Doctor:</strong> ${escapeHtml(request.doctor_id || 'N/A')}</div>
+                            <div><strong>Date:</strong> ${escapeHtml(request.created_at || 'N/A')}</div>
+                            <div><strong>Status:</strong> ${escapeHtml(request.status || 'N/A')}</div>
+                            <div><strong>Total:</strong> ${escapeHtml(request.total_amount || 0)} DA</div>
+                        </div>
+                        <h2>Requested analyses</h2>
+                        <table>
+                            <thead><tr><th>#</th><th>Analysis</th><th>Price</th></tr></thead>
+                            <tbody>${analysisRows || '<tr><td colspan="3">No analyses found</td></tr>'}</tbody>
+                        </table>
+                        ${request.clinical_notes ? `<h2>Clinical notes</h2><p>${escapeHtml(request.clinical_notes)}</p>` : ''}
+                        ${resultRows ? `<h2>Results</h2><table><thead><tr><th>Parameter</th><th>Value</th></tr></thead><tbody>${resultRows}</tbody></table>` : ''}
+                    </body>
+                    </html>
+                `);
+                printWindow.document.close();
+                printWindow.focus();
+                printWindow.onload = () => printWindow.print();
+            })
+            .catch(error => {
+                printWindow.close();
+                Swal.fire('Print failed', error.message, 'error');
+            });
+    }
+
   openUpdateModal(id) {
 
     fetch(`/analysis-requests-details/${id}`)
