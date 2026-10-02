@@ -93,6 +93,13 @@ class WorkflowSecurityTest extends TestCase
             ->assertJsonPath('data.0.id', $ownedRequest)
             ->assertJsonPath('stats.total', 1)
             ->assertJsonPath('stats.amount', 12.5);
+
+        $this->getJson('/reports/data')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $ownedRequest)
+            ->assertJsonPath('summary.requests', 1)
+            ->assertJsonPath('summary.requested', 12.5);
     }
 
     public function test_payment_cannot_exceed_the_invoice_balance(): void

@@ -45,6 +45,7 @@ Route::middleware('auth')->group(function () {
         Route::get('/managerAnalysis/index', [ManagerAnalysisController::class, 'index']);
         Route::get('/patients', [PatientController::class, 'index']);
         Route::get('/reports', [ReportController::class, 'index']);
+        Route::get('/reports/data', [ReportController::class, 'data']);
         Route::get('/settings', [SettingController::class, 'index']);
         Route::get('/billing', [BillingController::class, 'index']);
         Route::get('/billing/invoices', [BillingController::class, 'invoices']);

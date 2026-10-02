@@ -41,6 +41,11 @@
             <span class="sidebar-text">Reports</span>
         </a>
 
+        <a href="/billing" class="nav-link">
+            <i class="fas fa-file-invoice-dollar"></i>
+            <span class="sidebar-text">Billing</span>
+        </a>
+
         <a href="/settings" class="nav-link">
             <i class="fas fa-cog"></i>
             <span class="sidebar-text">Settings</span>
