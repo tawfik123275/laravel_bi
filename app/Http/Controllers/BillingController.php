@@ -42,11 +42,11 @@ class BillingController extends Controller
             });
         }
 
-        if ($request->filled('status') && $request->status !== 'all') {
+        if ($request->filled('status') && in_array($request->status, ['pending', 'partial', 'paid'], true)) {
             $query->where('bi.status', $request->status);
         }
 
-        $invoices = $query->paginate(25);
+        $invoices = $query->paginate(25)->appends($request->only(['search', 'status']));
         $totals = DB::table('billing_invoices')
             ->when($user->role === 'doctor', fn ($query) => $query->where('doctor_id', $user->id))
             ->selectRaw('COUNT(*) as invoice_count, COALESCE(SUM(total_amount), 0) as billed, COALESCE(SUM(amount_paid), 0) as received')
@@ -81,12 +81,13 @@ class BillingController extends Controller
     {
         $user = $this->ensureBillingAccess();
         $validated = $request->validate([
-            'amount' => ['required', 'numeric', 'min:0.01'],
+            'amount' => ['required', 'numeric', 'min:0.01', 'max:9999999999.99', 'regex:/^\d+(?:\.\d{1,2})?$/'],
             'method' => ['required', 'in:cash,card,transfer'],
             'reference' => ['nullable', 'string', 'max:255'],
+            'idempotency_key' => ['required', 'uuid'],
         ]);
 
-        DB::transaction(function () use ($validated, $invoiceId, $user) {
+        $duplicate = DB::transaction(function () use ($validated, $invoiceId, $user) {
             $invoice = DB::table('billing_invoices')
                 ->where('id', $invoiceId)
                 ->lockForUpdate()
@@ -96,11 +97,31 @@ class BillingController extends Controller
                 abort(404);
             }
 
+            $existingPayment = DB::table('billing_payments')
+                ->where('idempotency_key', $validated['idempotency_key'])
+                ->first();
+
+            if ($existingPayment) {
+                if (
+                    (int) $existingPayment->invoice_id !== (int) $invoice->id
+                    || (int) round((float) $existingPayment->amount * 100) !== (int) round((float) $validated['amount'] * 100)
+                    || $existingPayment->method !== $validated['method']
+                    || $existingPayment->reference !== ($validated['reference'] ?? null)
+                ) {
+                    throw ValidationException::withMessages([
+                        'idempotency_key' => 'This payment key was already used for a different payment.',
+                    ]);
+                }
+
+                return true;
+            }
+
             $amountCents = (int) round((float) $validated['amount'] * 100);
             $totalCents = (int) round((float) $invoice->total_amount * 100);
             $paidCents = (int) round((float) $invoice->amount_paid * 100);
+            $remainingCents = max(0, $totalCents - $paidCents);
 
-            if ($amountCents > $totalCents - $paidCents) {
+            if ($amountCents > $remainingCents) {
                 throw ValidationException::withMessages([
                     'amount' => 'Payment cannot exceed the invoice balance.',
                 ]);
@@ -110,6 +131,7 @@ class BillingController extends Controller
             DB::table('billing_payments')->insert([
                 'invoice_id' => $invoice->id,
                 'recorded_by' => $user->id,
+                'idempotency_key' => $validated['idempotency_key'],
                 'amount' => number_format($amountCents / 100, 2, '.', ''),
                 'method' => $validated['method'],
                 'reference' => $validated['reference'] ?? null,
@@ -124,11 +146,14 @@ class BillingController extends Controller
                     'status' => $newPaidCents >= $totalCents ? 'paid' : 'partial',
                     'updated_at' => now(),
                 ]);
+
+            return false;
         });
 
         return response()->json([
             'success' => true,
-            'message' => 'Payment recorded.',
+            'duplicate' => $duplicate,
+            'message' => $duplicate ? 'Payment was already recorded.' : 'Payment recorded.',
         ]);
     }
 
@@ -150,7 +175,7 @@ class BillingController extends Controller
     private function ensureBillingAccess()
     {
         $user = Auth::user();
-        abort_unless($user && in_array($user->role, ['doctor', 'lab'], true), 403);
+        abort_unless($user && in_array($user->role, ['doctor', 'lab', 'lab_staff', 'admin', 'clinic'], true), 403);
 
         return $user;
     }

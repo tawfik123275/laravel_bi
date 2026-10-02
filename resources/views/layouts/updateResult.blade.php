@@ -21,7 +21,6 @@
                         <select class="form-select" name="status" id="analysisStatus" required>
                             <option value="in-progress">In Progress</option>
                             <option value="completed">Completed</option>
-                            <option value="cancelled">Cancelled</option>
                         </select>
                     </div>
 

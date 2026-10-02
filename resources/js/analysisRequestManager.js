@@ -89,6 +89,12 @@ class AnalysisManager {
 
             this.currentPage = res.page;
             this.totalPages = res.pages;
+            if (res.stats) {
+                document.getElementById('statTotalRequests').textContent = res.stats.total;
+                document.getElementById('statPending').textContent = res.stats.pending;
+                document.getElementById('statCompleted').textContent = res.stats.completed;
+                document.getElementById('statRevenue').textContent = `${Number(res.stats.amount).toLocaleString()} DA`;
+            }
 
             // STORE CACHE
             this.cache[cacheKey] = res;
@@ -275,30 +281,33 @@ this.tbodymanager.innerHTML = html;
         }
 
         data.forEach(r => {
+            const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+                '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+            })[char]);
 
             this.tbody.innerHTML += `
                 <tr>
-                    <td>#${r.daily_number ?? r.id}</td>
+                    <td>#${escapeHtml(r.daily_number ?? r.id)}</td>
 
-                    <td>${r.barcode ?? ''}</td>
+                    <td>${escapeHtml(r.barcode)}</td>
 
                     <td>
-                        <strong>${r.patient_name ?? ''}</strong>
+                        <strong>${escapeHtml(r.patient_name)}</strong>
                         <br>
-                        <small>${r.patient_phone ?? ''}</small>
+                        <small>${escapeHtml(r.patient_phone)}</small>
                     </td>
 
-                    <td>${r.total_amount ?? 0} DA</td>
+                    <td>${escapeHtml(r.total_amount ?? 0)} DA</td>
 
-                    <td>${r.priority ?? ''}</td>
+                    <td>${escapeHtml(r.priority)}</td>
 
                     <td>
-                        <span class="status-badge badge-${r.status}">
-                            ${r.status}
+                        <span class="status-badge badge-${escapeHtml(r.status)}">
+                            ${escapeHtml(r.status)}
                         </span>
                     </td>
 
-                    <td>${r.created_at ?? ''}</td>
+                    <td>${escapeHtml(r.created_at)}</td>
 
                     <td>
                         ${this.getActions(r)}
@@ -313,7 +322,8 @@ this.tbodymanager.innerHTML = html;
     // ============================================
 
     getActions(r) {
-
+        const role = document.querySelector('meta[name="auth-role"]')?.content;
+        const userId = document.querySelector('meta[name="auth-user-id"]')?.content;
         let btns = `
             <button class="btn btn-sm btn-outline-primary"
                     onclick=" app.viewAnalysisDetails(${r.id})">
@@ -322,18 +332,13 @@ this.tbodymanager.innerHTML = html;
             </button>
         `;
 
-        if (r.status === 'pending' || r.status === 'in-progress') {
-
+        if (['lab', 'lab_staff'].includes(role) && r.status === 'pending' && !r.laboratory_id) {
             btns += `
-                <button class="btn btn-sm btn-outline-success"
-                        onclick="app.printTickets(${r.id})">
-
-                    Tickets
+                <button class="btn btn-sm btn-outline-success" onclick="app.claimRequest(${r.id})">
+                    Claim request
                 </button>
             `;
-
-        } else {
-
+        } else if (['lab', 'lab_staff'].includes(role) && r.status === 'in-progress' && Number(r.laboratory_id) === Number(userId)) {
             btns += `
                 <button class="btn btn-sm btn-outline-success"
                         onclick=" app.openUpdateModal( ${r.id})">
@@ -341,23 +346,28 @@ this.tbodymanager.innerHTML = html;
                     <i class="fas fa-edit"></i> Results
                 </button>
 
-                <button class="btn btn-sm btn-outline-info"
-                        onclick="app.printReport(${r.id})">
-
-                    Report
-                </button>
             `;
         }
 
-        btns += `
-            <button class="btn btn-sm btn-outline-danger"
-                    onclick="app.delete(${r.id}, '${r.patient_name}')">
-
-                Delete
-            </button>
-        `;
-
         return btns;
+    }
+
+    async claimRequest(id) {
+        try {
+            const response = await fetch(`/analysis-requests/${id}/claim`, {
+                method: 'POST',
+                headers: {
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                }
+            });
+            const result = await response.json();
+            if (!response.ok) throw new Error(result.message || 'Unable to claim this request.');
+            this.cache = {};
+            this.loadTable(this.currentPage);
+        } catch (error) {
+            Swal.fire({icon: 'error', title: 'Unable to claim request', text: error.message});
+        }
     }
 
     // ============================================
@@ -469,6 +479,9 @@ this.tbodymanager.innerHTML = html;
         .then(data => {
 
             if (data.success) {
+                const escapeHtml = value => String(value ?? '').replace(/[&<>"']/g, char => ({
+                    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;'
+                })[char]);
 
                 // ✅ FIX 1: correct path (IMPORTANT)
                 const analysis = data.data.request;
@@ -484,21 +497,21 @@ this.tbodymanager.innerHTML = html;
                 let detailsHtml = `
                     <div class="row">
                         <div class="col-md-6">
-                            <h6>Patient: ${analysis.patient_name}</h6>
-                            <h6>Doctor: ${analysis.doctor_id ?? 'N/A'}</h6>
+                            <h6>Patient: ${escapeHtml(analysis.patient_name)}</h6>
+                            <h6>Doctor: ${escapeHtml(analysis.doctor_id ?? 'N/A')}</h6>
                             <h6>Request Date: ${new Date(analysis.created_at).toLocaleDateString()}</h6>
                         </div>
 
                         <div class="col-md-6">
                             <h6>Priority:
                                 <span class="priority-badge priority-${analysis.priority}">
-                                    ${analysis.priority}
+                                    ${escapeHtml(analysis.priority)}
                                 </span>
                             </h6>
 
                             <h6>Status:
                                 <span class="status-badge badge-${analysis.status}">
-                                    ${analysis.status}
+                                    ${escapeHtml(analysis.status)}
                                 </span>
                             </h6>
                         </div>
@@ -511,7 +524,7 @@ this.tbodymanager.innerHTML = html;
 
                 // ✅ FIX 3: safe loop
                 analysisTypes.forEach(type => {
-                    detailsHtml += `<li>${type}</li>`;
+                    detailsHtml += `<li>${escapeHtml(type)}</li>`;
                 });
 
                 detailsHtml += `</ul>`;
@@ -520,7 +533,7 @@ this.tbodymanager.innerHTML = html;
                     detailsHtml += `
                         <hr>
                         <h6>Clinical Notes:</h6>
-                        <p>${analysis.clinical_notes}</p>
+                        <p>${escapeHtml(analysis.clinical_notes)}</p>
                     `;
                 }
 
@@ -543,8 +556,8 @@ this.tbodymanager.innerHTML = html;
                         for (const [key, value] of Object.entries(results)) {
                             detailsHtml += `
                                 <div class="result-card">
-                                    <h6>${key}:</h6>
-                                    <p>${value}</p>
+                                    <h6>${escapeHtml(key)}:</h6>
+                                    <p>${escapeHtml(value)}</p>
                                 </div>
                             `;
                         }
@@ -596,58 +609,60 @@ this.tbodymanager.innerHTML = html;
             if (data.success) {
 
                 const analysis = data.data.request;
-
-                // تعبئة الفورم
                 document.getElementById("analysisId").value = analysis.id;
-                document.getElementById("analysisStatus").value = analysis.status;
-
-                // عرض النتائج القديمة داخل المودال
+                document.getElementById("analysisStatus").value = 'in-progress';
                 let results = {};
 
                 try {
-                    results = analysis.results ? JSON.parse(analysis.results) : {};
+                    results = typeof analysis.results === 'string'
+                        ? JSON.parse(analysis.results || '{}')
+                        : (analysis.results || {});
                 } catch (e) {
                     results = {};
                 }
 
-                let container = document.getElementById("resultsContainer");
-                container.innerHTML = "";
-
-                for (const key in results) {
-                    container.innerHTML += `
-                        <div class="mb-4 d-flex align-items-center gap-3">
-    <label 
-        for="result-${key}" 
-        class="form-label fw-bold text-dark text-nowrap mb-0" 
-        style="min-width: 140px; font-size: 0.95rem;">
-        ${key}
-    </label>
-    
-    <div class="text-secondary opacity-50" style="font-size: 1.1rem;">|</div>
-    
-    <div class="flex-grow-1 position-relative">
-        <input 
-            type="text"
-            id="result-${key}"
-            name="results[${key}]" 
-            value="${results[key] ?? ''}"
-            class="form-control form-control-lg shadow-sm border-0 bg-light"
-            style="padding-left: 1rem; font-size: 0.95rem;"
-            placeholder="Enter value..."
-            autocomplete="off"
-            aria-label="Value for ${key}">
-        <div class="position-absolute top-50 end-0 translate-middle-y pe-3">
-            <i class="bi bi-pencil-square text-muted opacity-25"></i>
-        </div>
-    </div>
-</div>
-                    `;
+                let analysisDetails = [];
+                try {
+                    analysisDetails = typeof analysis.analysis_details === 'string'
+                        ? JSON.parse(analysis.analysis_details || '[]')
+                        : (analysis.analysis_details || []);
+                } catch (e) {
+                    analysisDetails = [];
                 }
 
-                // فتح المودال
+                const resultNames = [
+                    ...(data.data.parameters || []).map(parameter => parameter.parameter_name),
+                    ...analysisDetails.map(detail => detail.real_name || detail.name),
+                    ...Object.keys(results)
+                ].filter((name, index, names) => name && names.indexOf(name) === index);
+                const container = document.getElementById("resultsContainer");
+                container.replaceChildren();
+
+                resultNames.forEach((name, index) => {
+                    const wrapper = document.createElement('div');
+                    wrapper.className = 'mb-3';
+                    const label = document.createElement('label');
+                    label.className = 'form-label fw-bold';
+                    label.htmlFor = `analysis-result-${index}`;
+                    label.textContent = name;
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.id = `analysis-result-${index}`;
+                    input.name = `results[${name}]`;
+                    input.value = results[name] ?? '';
+                    input.maxLength = 1000;
+                    input.className = 'form-control';
+                    input.autocomplete = 'off';
+                    wrapper.append(label, input);
+                    container.appendChild(wrapper);
+                });
+
                 new bootstrap.Modal(document.getElementById('updateResultsModal')).show();
+            } else {
+                Swal.fire({icon: 'error', title: 'Unable to load request', text: data.message || 'Request not found.'});
             }
-        });
+        })
+        .catch(() => Swal.fire({icon: 'error', title: 'Unable to load request', text: 'Please try again.'}));
 }
 submitResultsForm() {
 
@@ -665,10 +680,10 @@ submitResultsForm() {
         },
         body: formData
     })
-    .then(res => res.json())
-    .then(data => {
+    .then(async res => ({response: res, data: await res.json()}))
+    .then(({response, data}) => {
 
-        if (data.success) {
+        if (response.ok && data.success) {
 
             Swal.fire({
                 icon: "success",
@@ -685,7 +700,7 @@ submitResultsForm() {
             Swal.fire({
                 icon: "error",
                 title: "Error",
-                text: data.message
+                text: data.message || Object.values(data.errors || {}).flat().join(' ') || 'Unable to update results.'
             });
 
         }

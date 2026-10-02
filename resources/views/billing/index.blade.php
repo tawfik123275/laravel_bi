@@ -172,6 +172,9 @@
         event.preventDefault();
         const form = event.target;
         const values = Object.fromEntries(new FormData(form));
+        const paymentKey = `billing-payment-${form.dataset.id}`;
+        values.idempotency_key = sessionStorage.getItem(paymentKey) || crypto.randomUUID();
+        sessionStorage.setItem(paymentKey, values.idempotency_key);
         const button = form.querySelector('button[type="submit"]');
         button.disabled = true;
         try {
@@ -185,7 +188,11 @@
                 body: JSON.stringify(values)
             });
             const result = await response.json();
-            if (!response.ok) throw new Error(result.message || Object.values(result.errors || {}).flat().join(' ') || 'Payment could not be recorded.');
+            if (!response.ok) {
+                if (response.status === 422) sessionStorage.removeItem(paymentKey);
+                throw new Error(result.message || Object.values(result.errors || {}).flat().join(' ') || 'Payment could not be recorded.');
+            }
+            sessionStorage.removeItem(paymentKey);
             await loadInvoices();
         } catch (error) {
             alert(error.message);

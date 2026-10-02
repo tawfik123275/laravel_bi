@@ -30,7 +30,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/analysis-requests', [AnalysisController::class, 'getDataRequest']);
         Route::get('/analysis-requests-details/{id}', [AnalysisController::class, 'getAnalysisDetails']);
         Route::get('/analysis-data', [AnalysisController::class, 'getDataAnalysis']);
-        Route::get('/analysis/{id}', [AnalysisController::class, 'store']);
     });
 
     Route::middleware('role:doctor')->post('/save-analysis-requests', [AnalysisController::class, 'saveNewRequest']);
@@ -39,7 +38,7 @@ Route::middleware('auth')->group(function () {
         Route::post('/analysis-requests-details/{id}/update-results', [AnalysisController::class, 'updateResults']);
     });
 
-    Route::middleware('role:lab,lab_staff,admin,clinic')->group(function () {
+    Route::middleware('role:doctor,lab,lab_staff,admin,clinic')->group(function () {
         Route::get('/managerAnalysis/index', [ManagerAnalysisController::class, 'index']);
         Route::get('/analysis-manager/prices', [AnalysisController::class, 'getDataAnalysis']);
         Route::get('/patients', [PatientController::class, 'index']);
