@@ -126,6 +126,7 @@ class AnalysisManager {
     // pagepricemanager table 
 
      async loadPriceTable() {
+        if (!this.tbodymanager) return;
 
         const f = this.getFilters();
 
@@ -170,6 +171,7 @@ class AnalysisManager {
         }
     }
      renderManagerTable(data) {
+    if (!this.tbodymanager) return;
 
     console.log("am here on rendermanagertable function");
     console.log(data);
