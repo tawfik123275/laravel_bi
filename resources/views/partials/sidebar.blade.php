@@ -15,10 +15,12 @@
             <span class="sidebar-text">Analysis Requests</span>
         </a>
 
-        <a href="/analysis/create" class="nav-link">
-            <i class="fas fa-plus-circle"></i>
-            <span class="sidebar-text">New Analysis</span>
-        </a>
+        @if (auth()->user()?->role === 'doctor')
+            <a href="/analysis/create" class="nav-link">
+                <i class="fas fa-plus-circle"></i>
+                <span class="sidebar-text">New Analysis</span>
+            </a>
+        @endif
         <a href="/managerAnalysis/index" class="nav-link">
             <i class="fas fa-cogs"></i>
             <span class="sidebar-text">Analysis Management</span>

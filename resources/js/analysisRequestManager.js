@@ -11,8 +11,8 @@ class AnalysisManager {
      
         this.initEvents();
 
-        this.loadTable(1);
-           this.loadPriceTable();
+        if (this.tbody) this.loadTable(1);
+        if (this.tbodymanager) this.loadPriceTable();
     }
 
     // ============================================
@@ -90,10 +90,16 @@ class AnalysisManager {
             this.currentPage = res.page;
             this.totalPages = res.pages;
             if (res.stats) {
-                document.getElementById('statTotalRequests').textContent = res.stats.total;
-                document.getElementById('statPending').textContent = res.stats.pending;
-                document.getElementById('statCompleted').textContent = res.stats.completed;
-                document.getElementById('statRevenue').textContent = `${Number(res.stats.amount).toLocaleString()} DA`;
+                const statNodes = {
+                    statTotalRequests: res.stats.total,
+                    statPending: res.stats.pending,
+                    statCompleted: res.stats.completed,
+                    statRevenue: `${Number(res.stats.amount).toLocaleString()} DA`
+                };
+                Object.entries(statNodes).forEach(([id, value]) => {
+                    const node = document.getElementById(id);
+                    if (node) node.textContent = value;
+                });
             }
 
             // STORE CACHE
@@ -107,7 +113,7 @@ class AnalysisManager {
 
             console.error(error);
 
-            this.tbody.innerHTML = `
+            if (this.tbody) this.tbody.innerHTML = `
                 <tr>
                     <td colspan="8" class="text-center text-danger">
                         Failed to load data
@@ -154,7 +160,7 @@ class AnalysisManager {
 
             console.error(error);
 
-            this.tbodymanager.innerHTML = `
+            if (this.tbodymanager) this.tbodymanager.innerHTML = `
                 <tr>
                     <td colspan="8" class="text-center text-danger">
                         Failed to load data2
@@ -504,13 +510,13 @@ this.tbodymanager.innerHTML = html;
 
                         <div class="col-md-6">
                             <h6>Priority:
-                                <span class="priority-badge priority-${analysis.priority}">
+                                <span class="priority-badge priority-${escapeHtml(analysis.priority)}">
                                     ${escapeHtml(analysis.priority)}
                                 </span>
                             </h6>
 
                             <h6>Status:
-                                <span class="status-badge badge-${analysis.status}">
+                                <span class="status-badge badge-${escapeHtml(analysis.status)}">
                                     ${escapeHtml(analysis.status)}
                                 </span>
                             </h6>
@@ -630,11 +636,23 @@ this.tbodymanager.innerHTML = html;
                     analysisDetails = [];
                 }
 
-                const resultNames = [
-                    ...(data.data.parameters || []).map(parameter => parameter.parameter_name),
-                    ...analysisDetails.map(detail => detail.real_name || detail.name),
-                    ...Object.keys(results)
-                ].filter((name, index, names) => name && names.indexOf(name) === index);
+                let selectedNames = [];
+                try {
+                    selectedNames = typeof analysis.analysis_types === 'string'
+                        ? JSON.parse(analysis.analysis_types || '[]')
+                        : (analysis.analysis_types || []);
+                } catch (e) {
+                    selectedNames = [];
+                }
+                const parameters = data.data.parameters || [];
+                const resultNames = analysisDetails.flatMap((detail, index) => {
+                    const candidates = [detail.real_name, detail.name, selectedNames[index]].filter(Boolean);
+                    const matchingParameters = parameters
+                        .filter(parameter => candidates.includes(parameter.analysis_name))
+                        .map(parameter => parameter.parameter_name);
+                    return matchingParameters.length ? matchingParameters : [detail.real_name || detail.name];
+                }).concat(Object.keys(results))
+                    .filter((name, index, names) => name && names.indexOf(name) === index);
                 const container = document.getElementById("resultsContainer");
                 container.replaceChildren();
 
@@ -728,6 +746,7 @@ submitResultsForm() {
 window.app = null;
 
 document.addEventListener('DOMContentLoaded', () => {
-
-    window.app = new AnalysisManager();
+    if (document.getElementById('analysisTableBody') || document.getElementById('analysisManagerTableBody')) {
+        window.app = new AnalysisManager();
+    }
 });

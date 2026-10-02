@@ -208,7 +208,7 @@ class AnalysisController extends Controller
                 'clinical_notes' => $validated['clinical_notes'] ?? null,
                 'required_date' => $validated['requiredDate'],
                 'notification_methods' => json_encode($validated['notification_methods'] ?? []),
-                'barcode' => 'BC-' . Str::uuid(),
+                'barcode' => 'BC-' . Str::upper(Str::random(10)),
                 'status' => 'pending',
                 'created_at' => now(),
             ]);
@@ -361,12 +361,26 @@ class AnalysisController extends Controller
             }
 
             $details = json_decode($analysisRequest->analysis_details ?? '[]', true) ?: [];
-            $allowedResults = DB::table('attrui_par_analysis')
+            $parameters = DB::table('attrui_par_analysis')
                 ->where('laboratory_request_id', $id)
-                ->pluck('parameter_name')
-                ->all();
-            foreach ($details as $detail) {
-                $allowedResults[] = $detail['real_name'] ?? $detail['name'] ?? null;
+                ->get(['analysis_name', 'parameter_name']);
+            $selectedNames = json_decode($analysisRequest->analysis_types ?? '[]', true) ?: [];
+            $allowedResults = [];
+            foreach ($details as $index => $detail) {
+                $candidateNames = array_filter([
+                    $detail['real_name'] ?? null,
+                    $detail['name'] ?? null,
+                    $selectedNames[$index] ?? null,
+                ]);
+                $matchingParameters = $parameters
+                    ->whereIn('analysis_name', $candidateNames)
+                    ->pluck('parameter_name')
+                    ->all();
+                if ($matchingParameters) {
+                    $allowedResults = array_merge($allowedResults, $matchingParameters);
+                } else {
+                    $allowedResults[] = $detail['real_name'] ?? $detail['name'] ?? null;
+                }
             }
             $allowedResults = array_values(array_unique(array_filter($allowedResults)));
 

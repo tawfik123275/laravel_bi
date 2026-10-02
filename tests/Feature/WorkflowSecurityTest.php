@@ -32,10 +32,19 @@ class WorkflowSecurityTest extends TestCase
             $table->unsignedBigInteger('laboratory_id')->nullable();
             $table->unsignedBigInteger('patient_id');
             $table->string('barcode')->nullable();
+            $table->text('analysis_details')->nullable();
             $table->decimal('total_amount', 12, 2)->default(0);
             $table->string('status');
             $table->text('results')->nullable();
             $table->timestamps();
+        });
+
+        Schema::create('attrui_par_analysis', function (Blueprint $table) {
+            $table->id();
+            $table->unsignedBigInteger('laboratory_request_id');
+            $table->string('analysis_name');
+            $table->string('parameter_name');
+            $table->timestamp('created_at')->nullable();
         });
     }
 
@@ -43,19 +52,21 @@ class WorkflowSecurityTest extends TestCase
     {
         $this->get('/doctor')->assertRedirect('/login');
 
-        $this->actingAs(User::factory()->create(['role' => 'lab']))
+        $this->actingAs($this->userWithRole('lab'))
             ->get('/doctor')
             ->assertForbidden();
 
-        $this->actingAs(User::factory()->create(['role' => 'doctor']))
+        $this->get('/patient')->assertForbidden();
+
+        $this->actingAs($this->userWithRole('doctor'))
             ->get('/doctor')
             ->assertOk();
     }
 
     public function test_doctor_can_only_read_own_payment_history(): void
     {
-        $owner = User::factory()->create(['role' => 'doctor']);
-        $otherDoctor = User::factory()->create(['role' => 'doctor']);
+        $owner = $this->userWithRole('doctor');
+        $otherDoctor = $this->userWithRole('doctor');
         $invoiceId = $this->createInvoice($owner->id);
 
         $this->actingAs($owner)
@@ -68,9 +79,25 @@ class WorkflowSecurityTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_doctor_analysis_list_and_statistics_are_scoped_to_the_doctor(): void
+    {
+        $doctor = $this->userWithRole('doctor');
+        $otherDoctor = $this->userWithRole('doctor');
+        $ownedRequest = $this->createRequest($doctor->id, 'Pending patient', 'pending', 12.50);
+        $this->createRequest($otherDoctor->id, 'Private patient', 'completed', 90);
+
+        $this->actingAs($doctor)
+            ->getJson('/analysis-requests')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id', $ownedRequest)
+            ->assertJsonPath('stats.total', 1)
+            ->assertJsonPath('stats.amount', 12.5);
+    }
+
     public function test_payment_cannot_exceed_the_invoice_balance(): void
     {
-        $doctor = User::factory()->create(['role' => 'doctor']);
+        $doctor = $this->userWithRole('doctor');
         $invoiceId = $this->createInvoice($doctor->id, 100, 75);
 
         $this->actingAs($doctor)->postJson("/billing/invoices/{$invoiceId}/payments", [
@@ -89,7 +116,7 @@ class WorkflowSecurityTest extends TestCase
 
     public function test_retried_payment_with_same_key_is_recorded_once(): void
     {
-        $doctor = User::factory()->create(['role' => 'doctor']);
+        $doctor = $this->userWithRole('doctor');
         $invoiceId = $this->createInvoice($doctor->id);
         $payment = [
             'amount' => '25.00',
@@ -116,13 +143,14 @@ class WorkflowSecurityTest extends TestCase
 
     public function test_laboratory_must_claim_a_request_before_completing_results(): void
     {
-        $laboratory = User::factory()->create(['role' => 'lab']);
+        $laboratory = $this->userWithRole('lab');
         $patientId = DB::table('patients_lab')->insertGetId([
             'full_name' => 'Test patient',
             'phone' => '5550000',
         ]);
         $requestId = DB::table('laboratory_requests')->insertGetId([
             'patient_id' => $patientId,
+            'analysis_details' => json_encode([['real_name' => 'CBC']]),
             'status' => 'pending',
             'created_at' => now(),
             'updated_at' => now(),
@@ -132,6 +160,11 @@ class WorkflowSecurityTest extends TestCase
             ->postJson("/analysis-requests/{$requestId}/claim")
             ->assertOk();
 
+        $this->actingAs($this->userWithRole('lab'))
+            ->postJson("/analysis-requests/{$requestId}/claim")
+            ->assertStatus(409);
+
+        $this->actingAs($laboratory);
         $this->postJson("/analysis-requests-details/{$requestId}/update-results", [
             'status' => 'completed',
             'results' => ['CBC' => ''],
@@ -161,5 +194,30 @@ class WorkflowSecurityTest extends TestCase
             'created_at' => now(),
             'updated_at' => now(),
         ]);
+    }
+
+    private function createRequest(int $doctorId, string $patientName, string $status, float $amount): int
+    {
+        $patientId = DB::table('patients_lab')->insertGetId([
+            'full_name' => $patientName,
+            'phone' => '5550000',
+        ]);
+
+        return DB::table('laboratory_requests')->insertGetId([
+            'doctor_id' => $doctorId,
+            'patient_id' => $patientId,
+            'status' => $status,
+            'total_amount' => number_format($amount, 2, '.', ''),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    private function userWithRole(string $role): User
+    {
+        $user = User::factory()->create();
+        $user->forceFill(['role' => $role])->save();
+
+        return $user;
     }
 }

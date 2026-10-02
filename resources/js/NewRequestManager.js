@@ -441,6 +441,7 @@ document.getElementById('patientPhone').addEventListener('blur', function () {
 
 
 document.addEventListener('DOMContentLoaded', () => {
-    window.app = new NewRequestManager();
+    if (document.getElementById('analysisSearch')) {
+        window.app = new NewRequestManager();
+    }
 });
-

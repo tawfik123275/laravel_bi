@@ -138,7 +138,7 @@
             }
 
             rows.innerHTML = result.data.map((invoice) => {
-                const balance = Number(invoice.total_amount) - Number(invoice.amount_paid);
+                const balance = Math.max(0, Number(invoice.total_amount) - Number(invoice.amount_paid));
                 const statusLabel = {pending: 'Unpaid', partial: 'Partially paid', paid: 'Paid'}[invoice.status] || invoice.status;
                 const paymentControls = balance > 0
                     ? `<form class="payment-form d-flex gap-1" data-id="${invoice.id}">

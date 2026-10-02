@@ -60,7 +60,7 @@ class BillingController extends Controller
                 'count' => (int) $totals->invoice_count,
                 'billed' => (float) $totals->billed,
                 'received' => (float) $totals->received,
-                'outstanding' => (float) $totals->billed - (float) $totals->received,
+                'outstanding' => max(0, (float) $totals->billed - (float) $totals->received),
             ],
         ]);
     }
