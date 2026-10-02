@@ -494,13 +494,33 @@ this.tbodymanager.innerHTML = html;
                 // ✅ FIX 1: correct path (IMPORTANT)
                 const analysis = data.data.request;
 
-                // ✅ FIX 2: parse JSON string safely
-                let analysisTypes = [];
-                try {
-                    analysisTypes = JSON.parse(analysis.analysis_types || '[]');
-                } catch (e) {
-                    analysisTypes = [];
+                const parseList = value => {
+                    if (Array.isArray(value)) return value;
+                    if (typeof value !== 'string' || !value.trim()) return [];
+                    try {
+                        const parsed = JSON.parse(value);
+                        if (Array.isArray(parsed)) return parsed;
+                        if (typeof parsed === 'string') {
+                            const nested = JSON.parse(parsed);
+                            return Array.isArray(nested) ? nested : [];
+                        }
+                        return parsed && typeof parsed === 'object' ? Object.values(parsed) : [];
+                    } catch {
+                        return value.split(',').map(item => item.trim()).filter(Boolean);
+                    }
+                };
+                let analysisTypes = parseList(analysis.analysis_types);
+                if (!analysisTypes.length) {
+                    analysisTypes = parseList(analysis.analysis_details).map(detail =>
+                        typeof detail === 'string'
+                            ? detail
+                            : (detail.real_name || detail.name || detail.analysis_name || '')
+                    ).filter(Boolean);
                 }
+
+                const analysisList = analysisTypes.length
+                    ? analysisTypes.map(type => `<li>${escapeHtml(type)}</li>`).join('')
+                    : '<li class="text-muted">No analyses listed for this request.</li>';
 
                 let detailsHtml = `
                     <div class="row">
@@ -528,12 +548,8 @@ this.tbodymanager.innerHTML = html;
                     <hr>
                     <h6>Requested Analyses:</h6>
                     <ul>
+                        ${analysisList}
                 `;
-
-                // ✅ FIX 3: safe loop
-                analysisTypes.forEach(type => {
-                    detailsHtml += `<li>${escapeHtml(type)}</li>`;
-                });
 
                 detailsHtml += `</ul>`;
 
